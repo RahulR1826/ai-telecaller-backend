@@ -1,0 +1,24 @@
+{
+  "name": "ai-telecaller-backend",
+  "type": "module",
+  "scripts": {
+    "start": "npx prisma generate && node src/server.js",
+    "dev": "node --watch --env-file=.env src/server.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "axios": "^1.17.0",
+    "body-parser": "^2.2.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "form-data": "^4.0.5",
+    "groq-sdk": "^1.2.1",
+    "socket.io": "^4.8.3",
+    "twilio": "^5.13.1",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  }
+}

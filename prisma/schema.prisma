@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Campaign {
+  id               String            @id @default(uuid())
+  name             String
+  businessName     String?
+  product          String?
+  offer            String?
+  objective        String?
+  adminName        String?
+  status           String            @default("draft")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  leads            Lead[]
+  contacts         CampaignContact[]
+  queueState       QueueState?
+}
+
+model CampaignContact {
+  id         String   @id @default(uuid())
+  campaignId String
+  phone      String
+  name       String?
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+}
+
+model Lead {
+  id          String      @id @default(uuid())
+  campaignId  String?
+  name        String?
+  phone       String      @unique
+  status      String      @default("new")
+  leadScore   Int         @default(0)
+  notes       String?
+  nextAction  String?
+  callbackTime String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  calls       Call[]
+  followUps   FollowUp[]
+  campaign    Campaign?   @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([phone])
+  @@index([campaignId])
+  @@index([status])
+  @@index([leadScore])
+}
+
+model Call {
+  id              String         @id @default(uuid())
+  callSid         String         @unique
+  leadId          String?
+  campaignId      String?
+  to              String?
+  from            String?
+  status          String         @default("initiated")
+  durationSec     Int            @default(0)
+  campaignContext Json?
+  history         Json?
+  lastAiResponses Json?
+  stage           String?
+  turnCount       Int            @default(0)
+  questionCount   Int            @default(0)
+  userIntent      String?
+  source          String?
+  startedAt       DateTime       @default(now())
+  endedAt         DateTime?
+  updatedAt       DateTime       @updatedAt
+  lead            Lead?          @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  transcripts     Transcript[]
+  summary         Summary?
+  recordings      CallRecording[]
+
+  @@index([leadId])
+  @@index([callSid])
+  @@index([status])
+  @@index([campaignId])
+}
+
+model Transcript {
+  id        String   @id @default(uuid())
+  callId    String
+  speaker   String   // "ai" or "customer"
+  text      String
+  source    String?  // "twilio" or "web"
+  sentiment String?  // "Positive", "Neutral", "Negative"
+  intent    String?
+  timestamp DateTime @default(now())
+  call      Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([callId])
+  @@index([timestamp])
+}
+
+model Summary {
+  id         String   @id @default(uuid())
+  callId     String   @unique
+  summary    String
+  leadScore  Int?
+  actionItem String?
+  demoTime   String?
+  objections String?
+  createdAt  DateTime @default(now())
+  call       Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([callId])
+}
+
+model FollowUp {
+  id          String    @id @default(uuid())
+  leadId      String
+  type        String    // "Demo", "Callback"
+  message     String
+  status      String    @default("pending")
+  scheduledAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([scheduledAt])
+}
+
+model Analytics {
+  id             String   @id @default(uuid())
+  date           DateTime @unique
+  totalCalls     Int      @default(0)
+  totalLeads     Int      @default(0)
+  avgLeadScore   Int      @default(0)
+  conversions    Int      @default(0)
+  updatedAt      DateTime @updatedAt
+}
+
+model CallRecording {
+  id        String   @id @default(uuid())
+  callId    String
+  url       String
+  duration  Int?
+  createdAt DateTime @default(now())
+  call      Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([callId])
+}
+
+model QueueState {
+  campaignId         String   @id
+  status             String   @default("completed")
+  pending            Json     @default("[]")
+  completed          Json     @default("[]")
+  failed             Json     @default("[]")
+  retryCount         Json     @default("{}")
+  inProgress         Boolean  @default(false)
+  currentPhoneNumber String?
+  activeCallSid      String?
+  startedAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  campaign           Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
