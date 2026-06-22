@@ -8,6 +8,11 @@ export const getAnalytics = async (req, res) => {
     ]);
 
     const totalCalls = sessions.length;
+    
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayCalls = sessions.filter(s => new Date(s.startedAt || s.createdAt) >= todayStart).length;
+
     const conversions = logs.filter((l) => String(l.intent || "").toLowerCase() === "interested").length;
     const conversionRate = totalCalls > 0
       ? parseFloat(((conversions / totalCalls) * 100).toFixed(1))
@@ -37,6 +42,7 @@ export const getAnalytics = async (req, res) => {
 
     res.json({
       totalCalls,
+      todayCalls,
       conversions,
       conversionRate,
       sentiment,
