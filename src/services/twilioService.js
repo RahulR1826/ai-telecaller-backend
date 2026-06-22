@@ -100,8 +100,13 @@ export const startOutboundCall = async ({ to, sessionId, allowAnyNumber = false,
     statusWebhook.searchParams.set("campaignId", campaignId);
   }
 
+  let formattedTo = String(to).trim();
+  if (!formattedTo.startsWith("+")) {
+    formattedTo = "+" + formattedTo;
+  }
+
   const call = await client.calls.create({
-    to,
+    to: formattedTo,
     from: TWILIO_PHONE_NUMBER,
     url: voiceWebhook.toString(),
     method: "POST",
